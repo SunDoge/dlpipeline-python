@@ -145,9 +145,12 @@ def numpy_to_image(np_3d: np.ndarray) -> Image:
 def image_to_torch_tensor(img: Image):
     import torch
 
-    tensor = torch.from_numpy(
-        image_to_numpy(img)
-    )
+    np_img = image_to_numpy(img)
+
+    if np_img.ndim == 2:
+        np_img = np_img[:, :, None]
+
+    tensor = torch.from_numpy(np_img.transpose((2, 0, 1)))
 
     if isinstance(tensor, torch.ByteTensor):
         return tensor.float().div(255)
