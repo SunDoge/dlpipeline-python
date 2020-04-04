@@ -86,7 +86,34 @@ def rescale(img: Image, scale: Union[float, Tuple[float, float]], kernel: str = 
 
 
 def crop(img: Image, top: int, left: int, height: int, width: int) -> Image:
-    pass
+    return img.crop(left, top, width, height)
+
+
+def center_crop(img: Image, output_size: Union[int, Tuple[int, int]]):
+
+    if isinstance(output_size, int):
+        output_size = (output_size, output_size)
+
+    width, height = output_size
+    return img.smartcrop(width, height, interesting='centre')
+
+
+def resized_crop(
+    img: Image,
+    top: int,
+    left: int,
+    height: int,
+    width: int,
+    size: Union[int, Tuple[int, int]],
+    kernel: str = Kernel.LINEAR
+) -> Image:
+    img = crop(img, top, left, height, width)
+    img = resize(img, (height, width), kernel=kernel)
+    return img
+
+
+def hflip(img: Image):
+    return img.fliphor()
 
 
 def image_to_numpy(img: Image) -> np.ndarray:
@@ -113,3 +140,61 @@ def numpy_to_image(np_3d: np.ndarray) -> Image:
         DTYPE_TO_FORMAT[str(np_3d.dtype)]
     )
     return vi
+
+
+def image_to_torch_tensor(img: Image):
+    import torch
+
+    tensor = torch.from_numpy(
+        image_to_numpy(img)
+    )
+
+    if isinstance(tensor, torch.ByteTensor):
+        return tensor.float().div(255)
+    else:
+        return tensor
+
+
+def torch_tensor_normalize(
+    tensor,
+    mean: Union[float, Tuple[float, float, float]],
+    std: Union[float, Tuple[float, float, float]],
+    inplace=False
+):
+    """Normalize a tensor image with mean and standard deviation.
+    .. note::
+        This transform acts out of place by default, i.e., it does not mutates the input tensor.
+    See :class:`~torchvision.transforms.Normalize` for more details.
+    Args:
+        tensor (Tensor): Tensor image of size (C, H, W) to be normalized.
+        mean (sequence): Sequence of means for each channel.
+        std (sequence): Sequence of standard deviations for each channel.
+        inplace(bool,optional): Bool to make this operation inplace.
+    Returns:
+        Tensor: Normalized Tensor image.
+    """
+    import torch
+
+    if not torch.is_tensor(tensor):
+        raise TypeError(
+            'tensor should be a torch tensor. Got {}.'.format(type(tensor)))
+
+    if tensor.ndimension() != 3:
+        raise ValueError('Expected tensor to be a tensor image of size (C, H, W). Got tensor.size() = '
+                         '{}.'.format(tensor.size()))
+
+    if not inplace:
+        tensor = tensor.clone()
+
+    dtype = tensor.dtype
+    mean = torch.as_tensor(mean, dtype=dtype, device=tensor.device)
+    std = torch.as_tensor(std, dtype=dtype, device=tensor.device)
+    if (std == 0).any():
+        raise ValueError(
+            'std evaluated to zero after conversion to {}, leading to division by zero.'.format(dtype))
+    if mean.ndim == 1:
+        mean = mean[:, None, None]
+    if std.ndim == 1:
+        std = std[:, None, None]
+    tensor.sub_(mean).div_(std)
+    return tensor
