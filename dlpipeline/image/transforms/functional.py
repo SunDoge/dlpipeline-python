@@ -45,15 +45,19 @@ def pyvips_loader(path: str, access=pyvips.Access.SEQUENTIAL) -> Image:
 
 def pyvips_resize_by_size(img: Image, size: Tuple[int, int], kernel: str = Kernel.LINEAR) -> Image:
     """
-    size -> width, height
+    size -> height, width
     """
-    w, h = size
+    # w, h = size
+    h, w = size
     scale = w / img.width
     vscale = h / img.height
     return img.resize(scale, vscale=vscale, kernel=kernel)
 
 
 def resize(img: Image, size: Union[int, Tuple[int, int]], kernel: str = Kernel.LINEAR):
+    """
+    (h, w)
+    """
 
     if isinstance(size, int):
         w, h = img.width, img.height
@@ -71,6 +75,18 @@ def resize(img: Image, size: Union[int, Tuple[int, int]], kernel: str = Kernel.L
 
     else:
         return pyvips_resize_by_size(img, size, kernel=kernel)
+
+
+def rescale(img: Image, scale: Union[float, Tuple[float, float]], kernel: str = Kernel.LINEAR) -> Image:
+    if isinstance(scale, float):
+        return img.resize(scale, kernel=kernel)
+    else:
+        scale, vscale = scale
+        return img.resize(scale, vscale=vscale, kernel=kernel)
+
+
+def crop(img: Image, top: int, left: int, height: int, width: int) -> Image:
+    pass
 
 
 def image_to_numpy(img: Image) -> np.ndarray:
