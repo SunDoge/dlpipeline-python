@@ -34,7 +34,7 @@ DTYPE_TO_FORMAT = {
 logger = logging.getLogger(__name__)
 
 
-class Kernel(Enum):
+class Kernel:
     LINEAR = 'linear'
     CUBIC = 'cubic'
 
@@ -63,9 +63,9 @@ def resize(img: Image, size: Union[int, Tuple[int, int]], kernel: str = Kernel.L
 
         # resize shorter edge
         if w < h:
-            scale = w / size
+            scale = size / w
         else:
-            scale = h / size
+            scale = size / h
 
         return img.resize(scale, kernel=kernel)
 
