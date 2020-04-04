@@ -39,7 +39,10 @@ class Kernel:
     CUBIC = 'cubic'
 
 
-def pyvips_loader(path: str, access=pyvips.Access.SEQUENTIAL) -> Image:
+def pyvips_loader(path: str, access=pyvips.Access.RANDOM) -> Image:
+    """
+    Strange performance gain when using Access.RANDOM
+    """
     return Image.new_from_file(path, access=access)
 
 
@@ -145,12 +148,22 @@ def numpy_to_image(np_3d: np.ndarray) -> Image:
 def image_to_torch_tensor(img: Image):
     import torch
 
-    np_img = image_to_numpy(img)
+    if img.format == 'uchar':
+        tensor = torch.ByteTensor(
+            torch.ByteStorage.from_buffer(img.write_to_memory()))
+        tensor = tensor.view(
+            img.height, img.width, img.bands
+        )
 
-    if np_img.ndim == 2:
-        np_img = np_img[:, :, None]
+    else:
+        np_img = image_to_numpy(img)
 
-    tensor = torch.from_numpy(np_img.transpose((2, 0, 1)))
+        if np_img.ndim == 2:
+            np_img = np_img[:, :, None]
+
+        tensor = torch.from_numpy(np_img)
+
+    tensor = tensor.permute((2, 0, 1)).contiguous()
 
     if isinstance(tensor, torch.ByteTensor):
         return tensor.float().div(255)

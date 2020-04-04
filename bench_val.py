@@ -36,6 +36,7 @@ def get_torchvision_pipeline():
 def get_dlpipeline_pipeline():
     from dlpipeline.image import transforms as T
     from dlpipeline.image.transforms import functional as F
+
     transform = T.Compose([
         T.Resize(256),
         T.CenterCrop(224),
