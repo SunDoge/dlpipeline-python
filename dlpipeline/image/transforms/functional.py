@@ -39,11 +39,11 @@ class Kernel:
     CUBIC = 'cubic'
 
 
-def pyvips_loader(path: str, access=pyvips.Access.RANDOM) -> Image:
+def pyvips_loader(path: str, access=pyvips.Access.RANDOM, memory=True) -> Image:
     """
     Strange performance gain when using Access.RANDOM
     """
-    return Image.new_from_file(path, access=access)
+    return Image.new_from_file(path, access=access, memory=memory)
 
 
 def pyvips_resize_by_size(img: Image, size: Tuple[int, int], kernel: str = Kernel.LINEAR) -> Image:
