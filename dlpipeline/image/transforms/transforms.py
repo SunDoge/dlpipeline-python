@@ -1,15 +1,15 @@
-from dlpipeline.common.compose import Compose
 from . import functional as F
 from .functional import Kernel
 from typing import *
 import random
+from dlpipeline.common.image.compose import Compose
 
 
 class Resize:
 
     def __init__(self, size: Union[int, Tuple[int, int]], kernel: str = Kernel.LINEAR):
         assert isinstance(size, int) or (
-            isinstance(size, Iterable) and len(size) == 2)
+                isinstance(size, Iterable) and len(size) == 2)
         self.size = size
         self.kernel = kernel
 

@@ -1,4 +1,3 @@
-from dlpipeline.image import transforms
 from dlpipeline.image.transforms import functional as F
 import dlpipeline
 from torchvision.transforms import functional as TF

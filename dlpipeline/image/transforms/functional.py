@@ -1,9 +1,9 @@
-import pyvips
 import logging
-from pyvips import Image
 from typing import *
+
 import numpy as np
-from enum import Enum
+import pyvips
+from pyvips import Image
 
 FORMAT_TO_DTYPE = {
     'uchar': np.uint8,
@@ -93,7 +93,6 @@ def crop(img: Image, top: int, left: int, height: int, width: int) -> Image:
 
 
 def center_crop(img: Image, output_size: Union[int, Tuple[int, int]]):
-
     if isinstance(output_size, int):
         output_size = (output_size, output_size)
 
@@ -102,13 +101,13 @@ def center_crop(img: Image, output_size: Union[int, Tuple[int, int]]):
 
 
 def resized_crop(
-    img: Image,
-    top: int,
-    left: int,
-    height: int,
-    width: int,
-    size: Union[int, Tuple[int, int]],
-    kernel: str = Kernel.LINEAR
+        img: Image,
+        top: int,
+        left: int,
+        height: int,
+        width: int,
+        size: Union[int, Tuple[int, int]],
+        kernel: str = Kernel.LINEAR
 ) -> Image:
     img = crop(img, top, left, height, width)
     img = resize(img, (height, width), kernel=kernel)
@@ -119,7 +118,7 @@ def hflip(img: Image):
     return img.fliphor()
 
 
-def image_to_numpy(img: Image) -> np.ndarray:
+def vips_image_to_numpy(img: Image) -> np.ndarray:
     """
     https://libvips.github.io/pyvips/intro.html#numpy-and-pil
     """
@@ -132,7 +131,7 @@ def image_to_numpy(img: Image) -> np.ndarray:
     return np_3d
 
 
-def numpy_to_image(np_3d: np.ndarray) -> Image:
+def numpy_to_vips_image(np_3d: np.ndarray) -> Image:
     """
     https://libvips.github.io/pyvips/intro.html#numpy-and-pil
     """
@@ -145,72 +144,5 @@ def numpy_to_image(np_3d: np.ndarray) -> Image:
     return vi
 
 
-def image_to_torch_tensor(img: Image):
-    import torch
-
-    if img.format == 'uchar':
-        tensor = torch.ByteTensor(
-            torch.ByteStorage.from_buffer(img.write_to_memory()))
-        tensor = tensor.view(
-            img.height, img.width, img.bands
-        )
-
-    else:
-        np_img = image_to_numpy(img)
-
-        if np_img.ndim == 2:
-            np_img = np_img[:, :, None]
-
-        tensor = torch.from_numpy(np_img)
-
-    tensor = tensor.permute((2, 0, 1)).contiguous()
-
-    if isinstance(tensor, torch.ByteTensor):
-        return tensor.float().div(255)
-    else:
-        return tensor
 
 
-def torch_tensor_normalize(
-    tensor,
-    mean: Union[float, Tuple[float, float, float]],
-    std: Union[float, Tuple[float, float, float]],
-    inplace=False
-):
-    """Normalize a tensor image with mean and standard deviation.
-    .. note::
-        This transform acts out of place by default, i.e., it does not mutates the input tensor.
-    See :class:`~torchvision.transforms.Normalize` for more details.
-    Args:
-        tensor (Tensor): Tensor image of size (C, H, W) to be normalized.
-        mean (sequence): Sequence of means for each channel.
-        std (sequence): Sequence of standard deviations for each channel.
-        inplace(bool,optional): Bool to make this operation inplace.
-    Returns:
-        Tensor: Normalized Tensor image.
-    """
-    import torch
-
-    if not torch.is_tensor(tensor):
-        raise TypeError(
-            'tensor should be a torch tensor. Got {}.'.format(type(tensor)))
-
-    if tensor.ndimension() != 3:
-        raise ValueError('Expected tensor to be a tensor image of size (C, H, W). Got tensor.size() = '
-                         '{}.'.format(tensor.size()))
-
-    if not inplace:
-        tensor = tensor.clone()
-
-    dtype = tensor.dtype
-    mean = torch.as_tensor(mean, dtype=dtype, device=tensor.device)
-    std = torch.as_tensor(std, dtype=dtype, device=tensor.device)
-    if (std == 0).any():
-        raise ValueError(
-            'std evaluated to zero after conversion to {}, leading to division by zero.'.format(dtype))
-    if mean.ndim == 1:
-        mean = mean[:, None, None]
-    if std.ndim == 1:
-        std = std[:, None, None]
-    tensor.sub_(mean).div_(std)
-    return tensor
